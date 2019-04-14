@@ -905,6 +905,25 @@ class Cifar10ImagePreprocessor(BaseImagePreprocessor):
 
 class COCOPreprocessor(BaseImagePreprocessor):
   """Preprocessor for COCO dataset input images, boxes, and labels."""
+  def __init__(self,
+               batch_size,
+               output_shapes,
+               num_splits,
+               dtype,
+               train,
+               distortions,
+               resize_method,
+               shift_ratio=-1,
+               summary_verbosity=0,
+               distort_color_in_yiq=True,
+               fuse_decode_and_crop=True,
+               match_mlperf=False,
+               single_eval_device=False):
+    super(COCOPreprocessor, self).__init__(batch_size, output_shapes, num_splits,
+                                              dtype, train, distortions, resize_method,
+                                              shift_ratio, summary_verbosity, distort_color_in_yiq,
+                                              fuse_decode_and_crop, match_mlperf)
+    self.single_eval_device = single_eval_device
 
   def minibatch(self,
                 dataset,
@@ -1055,7 +1074,7 @@ class COCOPreprocessor(BaseImagePreprocessor):
     ds = ds.prefetch(buffer_size=batch_size)
     if datasets_use_caching:
       ds = ds.cache()
-    if train:
+    if train or self.single_eval_device:
       ds = ds.apply(tf.data.experimental.shuffle_and_repeat(buffer_size=10000))
       mlperf.logger.log(key=mlperf.tags.INPUT_SHARD, value=10000)
       mlperf.logger.log(key=mlperf.tags.INPUT_ORDER)

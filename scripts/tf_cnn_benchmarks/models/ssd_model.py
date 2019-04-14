@@ -607,14 +607,8 @@ class SSD300Model(model_lib.CNNModel):
     # dummy results for top_N_accuracy to be compatible with benchmar_cnn.py.
     #if len(self.predictions) >= coco_num_val_images:
     if len(self.predictions) >= ssd_constants.COCO_NUM_VAL_IMAGES:
-      #---------------------Modified by Fei-----------------------------------
-      if using_hvd:
-          import horovod.tensorflow as hvd
-          if hvd.rank() == 0: log_fn('Got results for all {:d} eval examples. Calculate mAP...'.format(
-              ssd_constants.COCO_NUM_VAL_IMAGES))
-      else: log_fn('Got results for all {:d} eval examples. Calculate mAP...'.format(
+      log_fn('Got results for all {:d} eval examples. Calculate mAP...'.format(
           ssd_constants.COCO_NUM_VAL_IMAGES))
-    #-----------------End---------------------------------------------------
 
       annotation_file = os.path.join(self.params.data_dir,
                                      ssd_constants.ANNOTATION_FILE)
@@ -676,27 +670,12 @@ class SSD300Model(model_lib.CNNModel):
       ret = {'top_1_accuracy': self.eval_coco_ap, 'top_5_accuracy': 0.}
       for metric_key, metric_value in eval_results.items():
         ret[constants.SIMPLE_VALUE_RESULT_PREFIX + metric_key] = metric_value
-      #------------------------Modified by Fei--------------------------------
-      if using_hvd:
-          import horovod.tensorflow as hvd
-          if hvd.rank() == 0: mlperf.logger.log_eval_accuracy(self.eval_coco_ap, self.eval_global_step,
-                                          self.batch_size * self.params.num_gpus,
-                                          ssd_constants.COCO_NUM_TRAIN_IMAGES)
-      else: mlperf.logger.log_eval_accuracy(self.eval_coco_ap, self.eval_global_step,
-                                      self.batch_size * self.params.num_gpus,
+      mlperf.logger.log_eval_accuracy(self.batch_size * self.params.num_gpus,
                                       ssd_constants.COCO_NUM_TRAIN_IMAGES)
-      #----------------------End-------------------------------------------------
       return ret
-    #-----------------Modified by Fei--------------------------------
-    if using_hvd:
-        import horovod.tensorflow as hvd
-        if hvd.rank() == 0: log_fn('Got {:d} out of {:d} eval examples.'
-               ' Waiting for the remaining to calculate mAP...'.format(
-                   len(self.predictions), ssd_constants.COCO_NUM_VAL_IMAGES))
-    else: log_fn('Got {:d} out of {:d} eval examples.'
+    log_fn('Got {:d} out of {:d} eval examples.'
            ' Waiting for the remaining to calculate mAP...'.format(
                len(self.predictions), ssd_constants.COCO_NUM_VAL_IMAGES))
-    #---------------End--------------------------------------------
 
     return {'top_1_accuracy': self.eval_coco_ap, 'top_5_accuracy': 0.}
 

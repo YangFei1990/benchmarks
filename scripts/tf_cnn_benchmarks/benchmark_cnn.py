@@ -3508,7 +3508,8 @@ class BenchmarkCNN(object):
         summary_verbosity=self.params.summary_verbosity,
         distort_color_in_yiq=self.params.distort_color_in_yiq,
         fuse_decode_and_crop=self.params.fuse_decode_and_crop,
-        match_mlperf=self.params.ml_perf)
+        match_mlperf=self.params.ml_perf,
+        single_eval_device=self.params.single_eval_device)
 
   def add_sync_queues_and_barrier(self, name_prefix, enqueue_after_list):
     """Adds ops to enqueue on all worker queues.
