@@ -1,0 +1,88 @@
+Traceback (most recent call last):
+  File "tf_cnn_benchmarks.py", line 25, in <module>
+    from absl import app
+ModuleNotFoundError: No module named 'absl'
+ENDING TIMING RUN AT 2019-04-01 09:20:57 PM
+RESULT,ssd,0,0,ubuntu,2019-04-01 09:20:57 PM
+Traceback (most recent call last):
+  File "tf_cnn_benchmarks.py", line 25, in <module>
+    from absl import app
+ModuleNotFoundError: No module named 'absl'
+ENDING TIMING RUN AT 2019-04-01 09:21:26 PM
+RESULT,ssd,0,0,ubuntu,2019-04-01 09:21:26 PM
+
+:::MLPv0.5.0 ssd 1554154019.835840464 (benchmark_cnn.py:1264) run_start
+I0401 21:26:59.836016 140429034895104 mlperf_log.py:134] :::MLPv0.5.0 ssd 1554154019.835840464 (benchmark_cnn.py:1264) run_start
+
+:::MLPv0.5.0 ssd 1554154019.838640213 (models/ssd_model.py:63) backbone: "resnet34"
+I0401 21:26:59.838694 140429034895104 mlperf_log.py:136] :::MLPv0.5.0 ssd 1554154019.838640213 (models/ssd_model.py:63) backbone: "resnet34"
+
+:::MLPv0.5.0 ssd 1554154019.839962721 (models/ssd_model.py:69) loc_conf_out_channels: [256, 512, 512, 256, 256, 256]
+I0401 21:26:59.839998 140429034895104 mlperf_log.py:136] :::MLPv0.5.0 ssd 1554154019.839962721 (models/ssd_model.py:69) loc_conf_out_channels: [256, 512, 512, 256, 256, 256]
+
+:::MLPv0.5.0 ssd 1554154019.841112137 (models/ssd_model.py:75) num_defaults_per_cell: [4, 6, 6, 6, 4, 4]
+I0401 21:26:59.841144 140429034895104 mlperf_log.py:136] :::MLPv0.5.0 ssd 1554154019.841112137 (models/ssd_model.py:75) num_defaults_per_cell: [4, 6, 6, 6, 4, 4]
+W0401 21:26:59.971505 140429034895104 deprecation.py:323] From /home/ubuntu/anaconda3/envs/tensorflow_p36/lib/python3.6/site-packages/tensorflow/python/framework/op_def_library.py:263: colocate_with (from tensorflow.python.framework.ops) is deprecated and will be removed in a future version.
+Instructions for updating:
+Colocations handled automatically by placer.
+TensorFlow:  1.13
+Model:       ssd300
+Dataset:     coco
+Mode:        training + evaluation
+SingleSess:  False
+Batch size:  512 global
+             64 per device
+Num batches: 18483
+Num epochs:  80.00
+Devices:     ['/gpu:0', '/gpu:1', '/gpu:2', '/gpu:3', '/gpu:4', '/gpu:5', '/gpu:6', '/gpu:7']
+NUMA bind:   False
+Data format: NCHW
+Optimizer:   momentum
+Variables:   replicated
+AllReduce:   nccl
+==========
+Ignoring MLPerf logging item key=run_set_random_seed, value=1234 for model ssd300
+Ignoring MLPerf logging item key=run_set_random_seed, value=4321 for model ssd300
+Generating training model
+
+:::MLPv0.5.0 ssd 1554154019.983648539 (benchmark_cnn.py:2671) input_order
+I0401 21:26:59.983688 140429034895104 mlperf_log.py:136] :::MLPv0.5.0 ssd 1554154019.983648539 (benchmark_cnn.py:2671) input_order
+
+:::MLPv0.5.0 ssd 1554154019.984985113 (benchmark_cnn.py:2673) input_batch_size: 512
+I0401 21:26:59.985019 140429034895104 mlperf_log.py:136] :::MLPv0.5.0 ssd 1554154019.984985113 (benchmark_cnn.py:2673) input_batch_size: 512
+Ignoring MLPerf logging item key=preproc_num_train_examples, value=118287 for model ssd300
+Traceback (most recent call last):
+  File "/home/ubuntu/benchmarks/scripts/tf_cnn_benchmarks/preprocessing.py", line 1027, in create_dataset
+    import ssd_dataloader  # pylint: disable=g-import-not-at-top
+  File "/home/ubuntu/benchmarks/scripts/tf_cnn_benchmarks/ssd_dataloader.py", line 27, in <module>
+    from object_detection.box_coders import faster_rcnn_box_coder
+ModuleNotFoundError: No module named 'object_detection'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "tf_cnn_benchmarks.py", line 72, in <module>
+    app.run(main)  # Raises error on invalid flags, unlike tf.app.run()
+  File "/home/ubuntu/anaconda3/envs/tensorflow_p36/lib/python3.6/site-packages/absl/app.py", line 300, in run
+    _run_main(main, args)
+  File "/home/ubuntu/anaconda3/envs/tensorflow_p36/lib/python3.6/site-packages/absl/app.py", line 251, in _run_main
+    sys.exit(main(argv))
+  File "tf_cnn_benchmarks.py", line 68, in main
+    bench.run()
+  File "/home/ubuntu/benchmarks/scripts/tf_cnn_benchmarks/benchmark_cnn.py", line 1851, in run
+    return self._benchmark_train()
+  File "/home/ubuntu/benchmarks/scripts/tf_cnn_benchmarks/benchmark_cnn.py", line 2047, in _benchmark_train
+    build_result = self._build_graph()
+  File "/home/ubuntu/benchmarks/scripts/tf_cnn_benchmarks/benchmark_cnn.py", line 2081, in _build_graph
+    (input_producer_op, enqueue_ops, fetches) = self._build_model()
+  File "/home/ubuntu/benchmarks/scripts/tf_cnn_benchmarks/benchmark_cnn.py", line 2788, in _build_model
+    input_processing_info = self._build_input_processing(shift_ratio=0)
+  File "/home/ubuntu/benchmarks/scripts/tf_cnn_benchmarks/benchmark_cnn.py", line 2694, in _build_input_processing
+    self.raw_devices, self.dataset, self._doing_eval))
+  File "/home/ubuntu/benchmarks/scripts/tf_cnn_benchmarks/preprocessing.py", line 519, in build_multi_device_iterator
+    params.datasets_parallel_interleave_prefetch))
+  File "/home/ubuntu/benchmarks/scripts/tf_cnn_benchmarks/preprocessing.py", line 1029, in create_dataset
+    raise ImportError('To use the COCO dataset, you must clone the '
+ImportError: To use the COCO dataset, you must clone the repo https://github.com/tensorflow/models and add tensorflow/models and tensorflow/models/research to the PYTHONPATH, and compile the protobufs by following https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/installation.md#protobuf-compilation
+ENDING TIMING RUN AT 2019-04-01 09:27:01 PM
+RESULT,ssd,0,30,ubuntu,2019-04-01 09:26:31 PM
