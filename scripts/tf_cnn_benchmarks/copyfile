@@ -1,0 +1,9 @@
+#!/bin/bash
+hosts=`cat $1`
+
+for host in $hosts; do
+    scp benchmark_cnn.py ubuntu@$host:/home/ubuntu/benchmarks/scripts/tf_cnn_benchmarks/
+    cd models
+    scp ssd_model.py ubuntu@$host:/home/ubuntu/benchmarks/scripts/tf_cnn_benchmarks/models/
+    cd ..
+done

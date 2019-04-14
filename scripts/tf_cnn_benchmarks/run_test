@@ -1,0 +1,74 @@
+#!/bin/bash
+
+MODEL_DIR="./train_dir"
+EVAL_DIR="./eval_dir"
+if [ -d $MODEL_DIR ]; then
+  rm -r $MODEL_DIR
+fi
+if [ -d $EVAL_DIR ]; then
+  rm -r $EVAL_DIR
+fi
+
+# start timing
+start=$(date +%s)
+start_fmt=$(date +%Y-%m-%d\ %r)
+
+export PYTHONPATH="/home/ubuntu/src/cntk/bindings/python:/home/ubuntu/models:/home/ubuntu/models/research"
+
+python tf_cnn_benchmarks.py --model=ssd300 \
+--batch_size=64 \
+--data_name=coco \
+--backbone_model_path="./resnet34_checkpoint/model.ckpt-28152" \
+--optimizer=momentum \
+--weight_decay=5e-4 \
+--momentum=0.9 \
+--xla_compile \
+--num_eval_epochs=1.9 \
+--num_warmup_batches=0 \
+--eval_during_training_at_specified_steps='7500,10000,11250,12500,12707,15000' \
+--datasets_num_private_threads=100 \
+--num_inter_threads=160 \
+--variable_update=replicated \
+--all_reduce_spec=nccl \
+--gradient_repacking=2 \
+--stop_at_top_1_accuracy=0.212 \
+--ml_perf_compliance_logging \
+--loss_type_to_report=base_loss  \
+--single_l2_loss_op \
+--compute_lr_on_cpu \
+--collect_eval_results_async \
+--num_gpus=8 \
+--num_epochs=80 \
+--data_dir="/home/ubuntu/SSD/coco/" \
+--use_fp16 \
+--train_dir=${MODEL_DIR} \
+--eval_dir=${EVAL_DIR}
+
+# end timing
+end=$(date +%s)
+end_fmt=$(date +%Y-%m-%d\ %r)
+echo "ENDING TIMING RUN AT $end_fmt"
+
+# report result
+result=$(( $end - $start ))
+result_name="ssd"
+
+:'
+echo "RESULT,$result_name,0,$result,$USER,$start_fmt"
+python -m bind_launch --nsockets_per_node 2
+--ncores_per_socket 16 --nproc_per_node 8
+train.py --use-fp16
+--jit
+--delay-allreduce
+--epochs 70
+--warmup-factor 0
+--lr 2.5e-3
+--eval-batch-size 216
+--no-save
+--threshold=0.212
+--data /data
+--batch-size 152
+--warmup 300
+--nhwc
+--pad-input
+'
