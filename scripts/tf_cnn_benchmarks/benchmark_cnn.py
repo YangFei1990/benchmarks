@@ -1519,7 +1519,7 @@ class BenchmarkCNN(object):
       if not self.params.variable_update == 'horovod' and self.params.single_eval_device:
         raise ValueError('single_eval_device only work for horovod mode')
       real_worker = self.num_workers
-      if not self.params.single_eval_device and self.params.variable_update == 'horovod': real_worker = 1
+      if self.params.variable_update == 'horovod': real_worker = 1
       self.num_eval_batches, self.num_eval_epochs = get_num_batches_and_epochs(
           eval_params, self.eval_batch_size * real_worker,
           self.dataset.num_examples_per_epoch('val'))
@@ -1975,51 +1975,57 @@ class BenchmarkCNN(object):
                  image_producer, global_step):
     """Evaluate the model using the validation dataset."""
     with self._do_eval():
-      mlperf.logger.log_eval_epoch(
-          mlperf.tags.EVAL_START, global_step, self.batch_size)
-      loop_start_time = start_time = time.time()
-      # TODO(laigd): refactor the part to compute/report the accuracy. Currently
-      # it only works for image models.
-      top_1_accuracy_sum = 0.0
-      top_5_accuracy_sum = 0.0
-      total_eval_count = self.num_batches * self.batch_size
-      result_all = {}
-      for step in xrange(self.num_batches):
-        if (summary_writer and self.params.save_summaries_steps > 0 and
-            (step + 1) % self.params.save_summaries_steps == 0):
-          results, summary_str = sess.run([fetches, summary_op])
-          summary_writer.add_summary(summary_str)
-        else:
-          results = sess.run(fetches)
-        if len(result_all) == 0: result_all = results
-        else:
-            for key, val in results.items():
-                result_all[key] = np.concatenate((result_all[key], val), axis=0)
-        # Make global_step available in results for postprocessing.
-      from mpi4py import MPI
-      comm = MPI.COMM_WORLD
-      size = comm.Get_size()
-      rank = comm.Get_rank()
-      recvbuf = {}
-      for key, val in result_all.items():
-        if rank == 0:
-            print("key is {}".format(key))
-            print("val type is {}".format(type(val)))
-            print("val dtype is {}".format(val.dtype))
-            print("val shape is {}".format(val.shape))
-            recvbuf[key] = np.empty([size] + list(val.shape), dtype=val.dtype)
-        else: recvbuf[key] = None
-      for key in result_all.keys(): comm.Gather(result_all[key], recvbuf[key], root=0)
-      accuracy_at_1, accuracy_at_5 = None, None
-      if rank == 0:
+      accuracy_at_1, accuracy_at_5 = 0.0, 0.0
+      import horovod.tensorflow as hvd
+      if hvd.rank() == 0:
+        mlperf.logger.log_eval_epoch(
+            mlperf.tags.EVAL_START, global_step, self.batch_size)
+        loop_start_time = start_time = time.time()
+        # TODO(laigd): refactor the part to compute/report the accuracy. Currently
+        # it only works for image models.
+        top_1_accuracy_sum = 0.0
+        top_5_accuracy_sum = 0.0
+        total_eval_count = self.num_batches * self.batch_size
+        result_all = {}
+        for step in xrange(self.num_batches):
+          if (summary_writer and self.params.save_summaries_steps > 0 and
+              (step + 1) % self.params.save_summaries_steps == 0):
+            results, summary_str = sess.run([fetches, summary_op])
+            summary_writer.add_summary(summary_str)
+          else:
+            results = sess.run(fetches)
+          if len(result_all) == 0: result_all = results
+          else:
+              for key, val in results.items():
+                  result_all[key] = np.concatenate((result_all[key], val), axis=0)
+          # Make global_step available in results for postprocessing.
+        '''
+        from mpi4py import MPI
+        comm = MPI.COMM_WORLD
+        size = comm.Get_size()
+        rank = comm.Get_rank()
+        recvbuf = {}
+        for key, val in result_all.items():
+          if rank == 0:
+              print("key is {}".format(key))
+              print("val type is {}".format(type(val)))
+              print("val dtype is {}".format(val.dtype))
+              print("val shape is {}".format(val.shape))
+              recvbuf[key] = np.empty([size] + list(val.shape), dtype=val.dtype)
+          else: recvbuf[key] = None
+        for key in result_all.keys(): comm.Gather(result_all[key], recvbuf[key], root=0)
+        '''
+        
         print("Running eval on root process.....\n")
+        '''
         results = {}
         for key, val in recvbuf.items():
           dim1, dims = size * val.shape[1], val.shape[2:]
           results[key] = np.reshape(val, (dim1,)+dims)
           print("key is {}".format(key))
           print("val shape is {}".format(results[key].shape))
-
+        '''
+        results = result_all
         results['global_step'] = global_step
         results = self.model.postprocess(results, self.params.variable_update == 'horovod')
         top_1_accuracy_sum += results['top_1_accuracy']
@@ -2046,7 +2052,7 @@ class BenchmarkCNN(object):
         if summary_writer: summary_writer.add_summary(summary, global_step)
 
         log_fn('Accuracy @ 1 = %.4f Accuracy @ 5 = %.4f [%d examples]' %
-               (accuracy_at_1, accuracy_at_5, total_eval_count))
+                (accuracy_at_1, accuracy_at_5, total_eval_count))
         elapsed_time = loop_end_time - loop_start_time
         images_per_sec = (self.num_batches * self.batch_size / elapsed_time)
         if self.mode != constants.BenchmarkMode.TRAIN_AND_EVAL:
@@ -2074,7 +2080,8 @@ class BenchmarkCNN(object):
         if self.params.stop_at_top_1_accuracy:
           mlperf.logger.log(key=mlperf.tags.EVAL_TARGET,
                             value=self.params.stop_at_top_1_accuracy)
-
+      from mpi4py import MPI
+      comm = MPI.COMM_WORLD
       accuracy_at_1 = comm.bcast(accuracy_at_1, root=0)
       return accuracy_at_1, accuracy_at_5
 

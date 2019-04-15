@@ -493,12 +493,6 @@ class InputPreprocessor(object):
   def build_multi_device_iterator(self, batch_size, num_splits, cpu_device,
                                   params, gpu_devices, dataset, doing_eval):
     """Creates a MultiDeviceIterator."""
-    import time
-    if not doing_eval:
-        print("batch_size {}, num_splits {}, cpu_device {},"
-              " gpu_devices {}, dataset {}".format(batch_size,
-               num_splits, cpu_device, gpu_devices, dataset))
-        time.sleep(60)
     assert self.supports_datasets()
     assert num_splits == len(gpu_devices)
     with tf.name_scope('batch_processing'):
