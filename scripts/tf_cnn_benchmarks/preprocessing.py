@@ -495,8 +495,8 @@ class InputPreprocessor(object):
     """Creates a MultiDeviceIterator."""
     import time
     if doing_eval:
-        print("batch_size {}, num_splits {}, cpu_device {},
-               gpu_devices {}, dataset {}".format(batch_size,
+        print("batch_size {}, num_splits {}, cpu_device {},"
+              " gpu_devices {}, dataset {}".format(batch_size,
                num_splits, cpu_device, gpu_devices, dataset))
         time.sleep(60)
     assert self.supports_datasets()
