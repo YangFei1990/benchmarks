@@ -1519,13 +1519,10 @@ class BenchmarkCNN(object):
       if not self.params.variable_update == 'horovod' and self.params.single_eval_device:
         raise ValueError('single_eval_device only work for horovod mode')
       real_worker = self.num_workers
-      print("batch size {}, cpu_device {}, raw_devices {} \n".format(self.batch_size, self.cpu_device, self.raw_devices))
       if not self.params.single_eval_device and self.params.variable_update == 'horovod': real_worker = 1
       self.num_eval_batches, self.num_eval_epochs = get_num_batches_and_epochs(
           eval_params, self.eval_batch_size * real_worker,
           self.dataset.num_examples_per_epoch('val'))
-      print("self.num_eval_batches {}, self.num_eval_epochs {} \n".format(self.num_eval_batches, self.num_eval_epochs))
-      time.sleep(60)
       # End-----------------------------------------------------
     else:
       self.num_eval_batches, self.num_eval_epochs = None, None

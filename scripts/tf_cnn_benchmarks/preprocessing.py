@@ -493,6 +493,12 @@ class InputPreprocessor(object):
   def build_multi_device_iterator(self, batch_size, num_splits, cpu_device,
                                   params, gpu_devices, dataset, doing_eval):
     """Creates a MultiDeviceIterator."""
+    import time
+    if doing_eval:
+        print("batch_size {}, num_splits {}, cpu_device {},
+               gpu_devices {}, dataset {}".format(batch_size,
+               num_splits, cpu_device, gpu_devices, dataset))
+        time.sleep(60)
     assert self.supports_datasets()
     assert num_splits == len(gpu_devices)
     with tf.name_scope('batch_processing'):
@@ -905,6 +911,7 @@ class Cifar10ImagePreprocessor(BaseImagePreprocessor):
 
 class COCOPreprocessor(BaseImagePreprocessor):
   """Preprocessor for COCO dataset input images, boxes, and labels."""
+  #----------------Add by Fei---------------------------------
   def __init__(self,
                batch_size,
                output_shapes,
@@ -924,7 +931,7 @@ class COCOPreprocessor(BaseImagePreprocessor):
                                               shift_ratio, summary_verbosity, distort_color_in_yiq,
                                               fuse_decode_and_crop, match_mlperf)
     self.single_eval_device = single_eval_device
-
+  #--------------------End----------------------------------------
   def minibatch(self,
                 dataset,
                 subset,
