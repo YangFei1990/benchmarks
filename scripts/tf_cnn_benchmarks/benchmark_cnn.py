@@ -1988,6 +1988,7 @@ class BenchmarkCNN(object):
         total_eval_count = self.num_batches * self.batch_size
         result_all = {}
         for step in xrange(self.num_batches):
+          print("Loading result at step {}".format(step))
           if (summary_writer and self.params.save_summaries_steps > 0 and
               (step + 1) % self.params.save_summaries_steps == 0):
             results, summary_str = sess.run([fetches, summary_op])
@@ -2027,7 +2028,9 @@ class BenchmarkCNN(object):
         '''
         results = result_all
         results['global_step'] = global_step
+        print("Start postprocessing........")
         results = self.model.postprocess(results, self.params.variable_update == 'horovod')
+        print("postprocessing finished........")
         top_1_accuracy_sum += results['top_1_accuracy']
         top_5_accuracy_sum += results['top_5_accuracy']
         if (step + 1) % self.params.display_every == 0:
