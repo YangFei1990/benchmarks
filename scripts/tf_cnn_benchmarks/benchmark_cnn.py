@@ -2082,6 +2082,7 @@ class BenchmarkCNN(object):
                             value=self.params.stop_at_top_1_accuracy)
       from mpi4py import MPI
       comm = MPI.COMM_WORLD
+      print("Broadcast results......")
       accuracy_at_1 = comm.bcast(accuracy_at_1, root=0)
       return accuracy_at_1, accuracy_at_5
 
