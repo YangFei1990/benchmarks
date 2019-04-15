@@ -494,7 +494,7 @@ class InputPreprocessor(object):
                                   params, gpu_devices, dataset, doing_eval):
     """Creates a MultiDeviceIterator."""
     import time
-    if doing_eval:
+    if not doing_eval:
         print("batch_size {}, num_splits {}, cpu_device {},"
               " gpu_devices {}, dataset {}".format(batch_size,
                num_splits, cpu_device, gpu_devices, dataset))
