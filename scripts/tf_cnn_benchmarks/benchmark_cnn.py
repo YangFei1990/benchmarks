@@ -1986,7 +1986,7 @@ class BenchmarkCNN(object):
         top_1_accuracy_sum = 0.0
         top_5_accuracy_sum = 0.0
         total_eval_count = self.num_batches * self.batch_size
-        result_all = {}
+        predictions = {}
         for step in xrange(self.num_batches):
           print("Loading result at step {}".format(step))
           if (summary_writer and self.params.save_summaries_steps > 0 and
@@ -1995,12 +1995,27 @@ class BenchmarkCNN(object):
             summary_writer.add_summary(summary_str)
           else:
             results = sess.run(fetches)
+          import ssd_constants
+          pred_boxes = results[ssd_constants.PRED_BOXES]
+          pred_scores = results[ssd_constants.PRED_SCORES]
+          source_id = results[ssd_constants.SOURCE_ID]
+          raw_shape = results[ssd_constants.RAW_SHAPE]
+
+          for i, sid in enumerate(source_id):
+            predictions[int(sid)] = {
+                ssd_constants.PRED_BOXES: pred_boxes[i],
+                ssd_constants.PRED_SCORES: pred_scores[i],
+                ssd_constants.SOURCE_ID: source_id[i],
+                ssd_constants.RAW_SHAPE: raw_shape[i] 
+                }
+        assert len(predictions) < ssd_constants.COCO_NUM_VAL_IMAGES
+        '''      
           if len(result_all) == 0: result_all = results
           else:
               for key, val in results.items():
                   result_all[key] = np.concatenate((result_all[key], val), axis=0)
           # Make global_step available in results for postprocessing.
-        '''
+        
         from mpi4py import MPI
         comm = MPI.COMM_WORLD
         size = comm.Get_size()
@@ -2015,10 +2030,6 @@ class BenchmarkCNN(object):
               recvbuf[key] = np.empty([size] + list(val.shape), dtype=val.dtype)
           else: recvbuf[key] = None
         for key in result_all.keys(): comm.Gather(result_all[key], recvbuf[key], root=0)
-        '''
-        
-        print("Running eval on root process.....\n")
-        '''
         results = {}
         for key, val in recvbuf.items():
           dim1, dims = size * val.shape[1], val.shape[2:]
@@ -2026,10 +2037,8 @@ class BenchmarkCNN(object):
           print("key is {}".format(key))
           print("val shape is {}".format(results[key].shape))
         '''
-        results = result_all
-        results['global_step'] = global_step
-        print("Start postprocessing........")
-        results = self.model.postprocess(results, self.params.variable_update == 'horovod')
+        print("Running eval on root process.....\n")
+        results = self.model.postprocess_hvd(predictions, global_step)
         print("postprocessing finished........")
         top_1_accuracy_sum += results['top_1_accuracy']
         top_5_accuracy_sum += results['top_5_accuracy']
