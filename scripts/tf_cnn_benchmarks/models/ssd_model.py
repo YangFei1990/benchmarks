@@ -607,8 +607,14 @@ class SSD300Model(model_lib.CNNModel):
     # dummy results for top_N_accuracy to be compatible with benchmar_cnn.py.
     #if len(self.predictions) >= coco_num_val_images:
     if len(self.predictions) >= ssd_constants.COCO_NUM_VAL_IMAGES:
-      log_fn('Got results for all {:d} eval examples. Calculate mAP...'.format(
+      #---------------------Modified by Fei-----------------------------------
+      if using_hvd:
+          import horovod.tensorflow as hvd
+          if hvd.rank() == 0: log_fn('Got results for all {:d} eval examples. Calculate mAP...'.format(
+              ssd_constants.COCO_NUM_VAL_IMAGES))
+      else: log_fn('Got results for all {:d} eval examples. Calculate mAP...'.format(
           ssd_constants.COCO_NUM_VAL_IMAGES))
+    #-----------------End---------------------------------------------------
 
       annotation_file = os.path.join(self.params.data_dir,
                                      ssd_constants.ANNOTATION_FILE)
@@ -635,7 +641,6 @@ class SSD300Model(model_lib.CNNModel):
                 self.async_eval_predictions_queue.get()
               self.async_eval_predictions_queue.put('STOP')
               break
-
         if not self.async_eval_process:
           # Limiting the number of messages in predictions queue to prevent OOM.
           # Each message (predictions data) can potentially consume a lot of
@@ -670,13 +675,28 @@ class SSD300Model(model_lib.CNNModel):
       ret = {'top_1_accuracy': self.eval_coco_ap, 'top_5_accuracy': 0.}
       for metric_key, metric_value in eval_results.items():
         ret[constants.SIMPLE_VALUE_RESULT_PREFIX + metric_key] = metric_value
-      mlperf.logger.log_eval_accuracy(self.batch_size * self.params.num_gpus, ssd_constants.COCO_NUM_TRAIN_IMAGES)
+      #------------------------Modified by Fei--------------------------------
+      if using_hvd:
+          import horovod.tensorflow as hvd
+          if hvd.rank() == 0: mlperf.logger.log_eval_accuracy(self.eval_coco_ap, self.eval_global_step,
+                                          self.batch_size * self.params.num_gpus,
+                                          ssd_constants.COCO_NUM_TRAIN_IMAGES)
+      else: mlperf.logger.log_eval_accuracy(self.eval_coco_ap, self.eval_global_step,
+                                      self.batch_size * self.params.num_gpus,
+                                      ssd_constants.COCO_NUM_TRAIN_IMAGES)
+      #----------------------End-------------------------------------------------
       return ret
-    log_fn('Got {:d} out of {:d} eval examples.'
+    #-----------------Modified by Fei--------------------------------
+    if using_hvd:
+        import horovod.tensorflow as hvd
+        if hvd.rank() == 0: log_fn('Got {:d} out of {:d} eval examples.'
+               ' Waiting for the remaining to calculate mAP...'.format(
+                   len(self.predictions), ssd_constants.COCO_NUM_VAL_IMAGES))
+    else: log_fn('Got {:d} out of {:d} eval examples.'
            ' Waiting for the remaining to calculate mAP...'.format(
                len(self.predictions), ssd_constants.COCO_NUM_VAL_IMAGES))
-
-    return {'top_1_accuracy': self.eval_coco_ap, 'top_5_accuracy': 0.}
+    #---------------End--------------------------------------------
+    return {'top_1_accuracy': self.eval_coco_ap, 'top_5_accuracy': 0.}              
 
   def postprocess_hvd(self, predictions, global_step):
     """Postprocess results returned from model."""
@@ -697,80 +717,58 @@ class SSD300Model(model_lib.CNNModel):
       self.predictions.clear()
     self.predictions = predictions
 
-    # COCO metric calculates mAP only after a full epoch of evaluation. Return
-    # dummy results for top_N_accuracy to be compatible with benchmar_cnn.py.
-    #if len(self.predictions) >= coco_num_val_images:
-    if len(self.predictions) >= ssd_constants.COCO_NUM_VAL_IMAGES:
-      log_fn('Got results for all {:d} eval examples. Calculate mAP...'.format(
-          ssd_constants.COCO_NUM_VAL_IMAGES))
+    log_fn('Got results for all {:d} eval examples. Calculate mAP...'.format(
+        ssd_constants.COCO_NUM_VAL_IMAGES))
+    annotation_file = os.path.join(self.params.data_dir,
+                                    ssd_constants.ANNOTATION_FILE)
+    decoded_preds = coco_metric.decode_predictions(self.predictions.values())
+    self.predictions.clear()
 
-      annotation_file = os.path.join(self.params.data_dir,
-                                     ssd_constants.ANNOTATION_FILE)
-      # Size of predictions before decoding about 15--30GB, while size after
-      # decoding is 100--200MB. When using async eval mode, decoding takes
-      # 20--30 seconds of main thread time but is necessary to avoid OOM during
-      # inter-process communication.
-      decoded_preds = coco_metric.decode_predictions(self.predictions.values())
-      self.predictions.clear()
+    if self.params.collect_eval_results_async:
+      def _eval_results_getter():
+        """Iteratively get eval results from async eval process."""
+        while True:
+          step, eval_results = self.async_eval_results_queue.get()
+          self.eval_coco_ap = eval_results['COCO/AP']
+          mlperf.logger.log_eval_accuracy(
+              self.eval_coco_ap, step, self.batch_size * self.params.num_gpus,
+              ssd_constants.COCO_NUM_TRAIN_IMAGES)
+          if self.reached_target():
+            while not self.async_eval_predictions_queue.empty():
+              self.async_eval_predictions_queue.get()
+            self.async_eval_predictions_queue.put('STOP')
+            break
 
-      if self.params.collect_eval_results_async:
-        def _eval_results_getter():
-          """Iteratively get eval results from async eval process."""
-          while True:
-            step, eval_results = self.async_eval_results_queue.get()
-            self.eval_coco_ap = eval_results['COCO/AP']
-            mlperf.logger.log_eval_accuracy(
-                self.eval_coco_ap, step, self.batch_size * self.params.num_gpus,
-                ssd_constants.COCO_NUM_TRAIN_IMAGES)
-            if self.reached_target():
-              # Reached target, clear all pending messages in predictions queue
-              # and insert poison pill to stop the async eval process.
-              while not self.async_eval_predictions_queue.empty():
-                self.async_eval_predictions_queue.get()
-              self.async_eval_predictions_queue.put('STOP')
-              break
+      if not self.async_eval_process:
 
-        if not self.async_eval_process:
-          # Limiting the number of messages in predictions queue to prevent OOM.
-          # Each message (predictions data) can potentially consume a lot of
-          # memory, and normally there should only be few messages in the queue.
-          # If often blocked on this, consider reducing eval frequency.
-          self.async_eval_predictions_queue = multiprocessing.Queue(2)
-          self.async_eval_results_queue = multiprocessing.Queue()
+        self.async_eval_predictions_queue = multiprocessing.Queue(2)
+        self.async_eval_results_queue = multiprocessing.Queue()
 
-          # Reason to use a Process as opposed to Thread is mainly the
-          # computationally intensive eval runner. Python multithreading is not
-          # truly running in parallel, a runner thread would get significantly
-          # delayed (or alternatively delay the main thread).
-          self.async_eval_process = multiprocessing.Process(
-              target=coco_metric.async_eval_runner,
-              args=(self.async_eval_predictions_queue,
-                    self.async_eval_results_queue,
-                    annotation_file))
-          self.async_eval_process.daemon = True
-          self.async_eval_process.start()
+        self.async_eval_process = multiprocessing.Process(
+            target=coco_metric.async_eval_runner,
+            args=(self.async_eval_predictions_queue,
+                  self.async_eval_results_queue,
+                  annotation_file))
+        self.async_eval_process.daemon = True
+        self.async_eval_process.start()
 
-          self.async_eval_results_getter_thread = threading.Thread(
-              target=_eval_results_getter, args=())
-          self.async_eval_results_getter_thread.daemon = True
-          self.async_eval_results_getter_thread.start()
+        self.async_eval_results_getter_thread = threading.Thread(
+            target=_eval_results_getter, args=())
+        self.async_eval_results_getter_thread.daemon = True
+        self.async_eval_results_getter_thread.start()
 
-        self.async_eval_predictions_queue.put(
-            (self.eval_global_step, decoded_preds))
-        return {'top_1_accuracy': 0, 'top_5_accuracy': 0.}
+      self.async_eval_predictions_queue.put(
+          (self.eval_global_step, decoded_preds))
+      return {'top_1_accuracy': 0, 'top_5_accuracy': 0.}
 
-      eval_results = coco_metric.compute_map(decoded_preds, annotation_file)
-      self.eval_coco_ap = eval_results['COCO/AP']
-      ret = {'top_1_accuracy': self.eval_coco_ap, 'top_5_accuracy': 0.}
-      for metric_key, metric_value in eval_results.items():
-        ret[constants.SIMPLE_VALUE_RESULT_PREFIX + metric_key] = metric_value
-      mlperf.logger.log_eval_accuracy(self.batch_size * self.params.num_gpus, ssd_constants.COCO_NUM_TRAIN_IMAGES)
-      return ret
-    log_fn('Got {:d} out of {:d} eval examples.'
-           ' Waiting for the remaining to calculate mAP...'.format(
-               len(self.predictions), ssd_constants.COCO_NUM_VAL_IMAGES))
+    eval_results = coco_metric.compute_map(decoded_preds, annotation_file)
+    self.eval_coco_ap = eval_results['COCO/AP']
+    ret = {'top_1_accuracy': self.eval_coco_ap, 'top_5_accuracy': 0.}
+    for metric_key, metric_value in eval_results.items():
+      ret[constants.SIMPLE_VALUE_RESULT_PREFIX + metric_key] = metric_value
+    mlperf.logger.log_eval_accuracy(self.batch_size * self.params.num_gpus, ssd_constants.COCO_NUM_TRAIN_IMAGES)
+    return ret
 
-    return {'top_1_accuracy': self.eval_coco_ap, 'top_5_accuracy': 0.}
 
   def get_synthetic_inputs(self, input_name, nclass):
     """Generating synthetic data matching real data shape and type."""
