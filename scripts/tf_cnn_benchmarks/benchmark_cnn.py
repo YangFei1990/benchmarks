@@ -2008,7 +2008,7 @@ class BenchmarkCNN(object):
                 ssd_constants.SOURCE_ID: source_id[i],
                 ssd_constants.RAW_SHAPE: raw_shape[i] 
                 }
-        assert len(predictions) < ssd_constants.COCO_NUM_VAL_IMAGES, "loaded samples is {}, less than the data set {}".format(len(predictions), ssd_constants.COCO_NUM_VAL_IMAGES)
+        assert len(predictions) >= ssd_constants.COCO_NUM_VAL_IMAGES, "loaded samples is {}, less than the data set {}".format(len(predictions), ssd_constants.COCO_NUM_VAL_IMAGES)
         '''      
           if len(result_all) == 0: result_all = results
           else:
