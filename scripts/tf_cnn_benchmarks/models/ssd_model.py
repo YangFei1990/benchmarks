@@ -692,12 +692,10 @@ class SSD300Model(model_lib.CNNModel):
                         '#protobuf-compilation ; To evaluate using COCO'
                         'metric, download and install Python COCO API from'
                         'https://github.com/cocodataset/cocoapi')
-    self.predictions = predictions
     if global_step > self.eval_global_step:
       self.eval_global_step = global_step
       self.predictions.clear()
     self.predictions = predictions
-
 
     # COCO metric calculates mAP only after a full epoch of evaluation. Return
     # dummy results for top_N_accuracy to be compatible with benchmar_cnn.py.
