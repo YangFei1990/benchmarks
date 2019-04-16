@@ -766,8 +766,7 @@ class SSD300Model(model_lib.CNNModel):
       ret = {'top_1_accuracy': self.eval_coco_ap, 'top_5_accuracy': 0.}
       for metric_key, metric_value in eval_results.items():
         ret[constants.SIMPLE_VALUE_RESULT_PREFIX + metric_key] = metric_value
-      mlperf.logger.log_eval_accuracy(self.batch_size * self.params.num_gpus,
-                                      ssd_constants.COCO_NUM_TRAIN_IMAGES)
+      mlperf.logger.log_eval_accuracy(self.batch_size * self.params.num_gpus, ssd_constants.COCO_NUM_TRAIN_IMAGES)
       return ret
     log_fn('Got {:d} out of {:d} eval examples.'
            ' Waiting for the remaining to calculate mAP...'.format(
