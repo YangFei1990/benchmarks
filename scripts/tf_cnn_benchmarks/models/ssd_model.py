@@ -284,7 +284,7 @@ class SSD300Model(model_lib.CNNModel):
       return res
 
     num_ranks = 32
-    lr = 3.9 #0.1*batch_size/256.0 # 3.7
+    lr = 0.2 #0.1*batch_size/256.0 # 3.7
 
     warmup_lr = 0.001
     lc_alpha = 0.0
