@@ -2051,8 +2051,8 @@ class BenchmarkCNN(object):
         if image_producer is not None:
           image_producer.notify_image_consumption()
         loop_end_time = time.time()
-        accuracy_at_1 = top_1_accuracy_sum / self.num_batches
-        accuracy_at_5 = top_5_accuracy_sum / self.num_batches
+        accuracy_at_1 = top_1_accuracy_sum #/ self.num_batches
+        accuracy_at_5 = top_5_accuracy_sum #/ self.num_batches
         summary = tf.Summary()
         summary.value.add(tag='eval/Accuracy@1', simple_value=accuracy_at_1)
         summary.value.add(tag='eval/Accuracy@5', simple_value=accuracy_at_5)
@@ -2096,7 +2096,7 @@ class BenchmarkCNN(object):
       comm = MPI.COMM_WORLD
       print("Broadcast results......")
       accuracy_at_1 = comm.bcast(accuracy_at_1, root=0)
-      comm.Barrier()
+      #comm.Barrier()
       return accuracy_at_1, accuracy_at_5
 
   def _eval_once(self, sess, summary_writer, fetches, summary_op,
