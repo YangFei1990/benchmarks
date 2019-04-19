@@ -2096,6 +2096,7 @@ class BenchmarkCNN(object):
       comm = MPI.COMM_WORLD
       print("Broadcast results......")
       accuracy_at_1 = comm.bcast(accuracy_at_1, root=0)
+      comm.Barrier()
       return accuracy_at_1, accuracy_at_5
 
   def _eval_once(self, sess, summary_writer, fetches, summary_op,
