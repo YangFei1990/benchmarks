@@ -303,6 +303,28 @@ class SSD300Model(model_lib.CNNModel):
     learning_rate = tf.div(learning_rate, tf.constant(num_ranks, dtype=tf.float32))
     return learning_rate
 
+  def get_learning_rate_torch(self, global_step, batch_size, N_gpu):
+    batch_size = 32
+    N_gpu = 32
+    global_batch_size = batch_size * N_gpu
+    decay1, decay2 = 160, 200
+    lo = (decay1 * 1000 * 32) // global_batch_size
+    hi = (decay2 * 1000 * 32) // global_batch_size
+    boundaries = [lo, hi]
+
+    lr = 2.5e-3
+    # mlperf only allows base_lr scaled by an integer
+    base_lr = 1e-3
+    requested_lr_multiplier = lr / base_lr
+    adjusted_multiplier = max(1, round(requested_lr_multiplier * global_batch_size / 32))
+    current_lr = base_lr * adjusted_multiplier
+
+    warmup_factor, warmup_iter = 0, 300
+    warmup_step = current_lr / (warmup_iter * (2 ** warmup_factor))
+    warmup_lr = tf.cast(current_lr, tf.float32) - (tf.cast(warmup_iter, tf.float32) - tf.cast(global_step, tf.float32)) * tf.cast(warmup_step, tf.float32)
+
+    lr_ = tf.train.piecewise_constant(global_step, boundaries, [current_lr, current_lr * 0.1, current_lr * 0.01])
+    return tf.cond(global_step < warmup_iter, lambda: warmup_lr, lambda: lr_)
 
   def get_learning_rate_old(self, global_step, batch_size):
     rescaled_lr = self.get_scaled_base_learning_rate(batch_size)
