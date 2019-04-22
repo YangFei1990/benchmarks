@@ -1178,7 +1178,7 @@ def get_learning_rate(params, global_step, num_examples_per_epoch, model,
           learning_rate = tf.maximum(learning_rate,
                                      params.minimum_learning_rate)
     else:
-      learning_rate = model.get_learning_rate_old(global_step, batch_size)
+      learning_rate = model.get_learning_rate_torch(global_step, batch_size, self.params.num_gpus)
     if params.num_learning_rate_warmup_epochs > 0 and (
         params.init_learning_rate is not None or
         params.piecewise_learning_rate_schedule):
@@ -2004,16 +2004,16 @@ class BenchmarkCNN(object):
                 ssd_constants.PRED_BOXES: pred_boxes[i],
                 ssd_constants.PRED_SCORES: pred_scores[i],
                 ssd_constants.SOURCE_ID: source_id[i],
-                ssd_constants.RAW_SHAPE: raw_shape[i] 
+                ssd_constants.RAW_SHAPE: raw_shape[i]
                 }
         assert len(predictions) >= ssd_constants.COCO_NUM_VAL_IMAGES, "loaded samples is {}, less than the data set {}".format(len(predictions), ssd_constants.COCO_NUM_VAL_IMAGES)
-        '''      
+        '''
           if len(result_all) == 0: result_all = results
           else:
               for key, val in results.items():
                   result_all[key] = np.concatenate((result_all[key], val), axis=0)
           # Make global_step available in results for postprocessing.
-        
+
         from mpi4py import MPI
         comm = MPI.COMM_WORLD
         size = comm.Get_size()
