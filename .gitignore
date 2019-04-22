@@ -1,0 +1,3 @@
+scripts/tf_cnn_benchmarks/copyfile
+scripts/tf_cnn_benchmarks/hosts4
+*.pyc
