@@ -320,7 +320,7 @@ class SSD300Model(model_lib.CNNModel):
 
     warmup_factor, warmup_iter = 0, 300
     warmup_step = current_lr / (warmup_iter * (2 ** warmup_factor))
-    warmup_lr = current_lr - (warmup_iter - global_step) * warmup_step
+    warmup_lr = tf.cast(current_lr, tf.float32) - (tf.cast(warmup_iter, tf.float32) - tf.cast(global_step, tf.float32)) * warmup_step
 
     lr_ = tf.train.piecewise_constant(global_step, boundaries, [current_lr, current_lr * 0.1, current_lr * 0.01])
     return tf.cond(global_step < warmup_iter, lambda: warmup_lr, lambda: lr_)
