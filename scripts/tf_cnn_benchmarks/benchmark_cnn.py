@@ -658,6 +658,7 @@ flags.DEFINE_string('benchmark_test_id', None,
                     'system.')
 flags.DEFINE_boolean('single_eval_device', False, 'It is used for horovod mode, if set to be True, the eval '
                      'code will be run on a single GPU and boardcast to all other GPUs')
+flags.DEFINE_boolean('use_torch_lr', False, 'use pytorch learning rate schedule')
 
 platforms_util.define_platform_params()
 
@@ -1178,7 +1179,9 @@ def get_learning_rate(params, global_step, num_examples_per_epoch, model,
           learning_rate = tf.maximum(learning_rate,
                                      params.minimum_learning_rate)
     else:
-      learning_rate = model.get_learning_rate_torch(global_step, batch_size, params.num_gpus)
+      learning_rate = None
+      if params.use_torch_lr: learning_rate = model.get_learning_rate_torch(global_step, batch_size, params.num_gpus)
+      else: learning_rate = model.get_learning_rate_old(global_step, batch_size)
     if params.num_learning_rate_warmup_epochs > 0 and (
         params.init_learning_rate is not None or
         params.piecewise_learning_rate_schedule):
