@@ -1180,7 +1180,7 @@ def get_learning_rate(params, global_step, num_examples_per_epoch, model,
           learning_rate = tf.maximum(learning_rate,
                                      params.minimum_learning_rate)
     else:
-      learning_rate = model.get_learning_rate_torch(global_step, batch_size)
+      learning_rate = model.get_learning_rate_torch(global_step, batch_size, 1)
     if params.num_learning_rate_warmup_epochs > 0 and (
         params.init_learning_rate is not None or
         params.piecewise_learning_rate_schedule):
