@@ -1,1 +1,4 @@
 scripts/tf_cnn_benchmarks/resnet34_checkpoint/*
+*.pyc
+scripts/tf_cnn_benchmarks/copyfile
+scripts/tf_cnn_benchmarks/hosts4_noslots
