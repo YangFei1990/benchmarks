@@ -66,7 +66,10 @@ def main(positional_arguments):
 
     bench.print_info()
     bench.run()
-
+    try: 
+        import horovod.tensorflow as hvd
+        if hvd.rank() == 0: print("The end.........\n")
+    except: pass
 
 if __name__ == '__main__':
   app.run(main)  # Raises error on invalid flags, unlike tf.app.run()

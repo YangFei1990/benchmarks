@@ -2414,10 +2414,15 @@ class BenchmarkCNN(object):
             'Received OutOfRangeError. Wrapping in Runtime error to avoid '
             'Supervisor from suppressing the error. Original OutOfRangeError '
             'with traceback:\n' + traceback.format_exc())
-
+    if self.params.variable_update == 'horovod':
+        import horovod.tensorflow as hvd
+        if hvd.rank() == 0: print("Now in the benchmark graph\n")
     sv.stop()
     if profiler:
       generate_tfprof_profile(profiler, self.params.tfprof_file)
+    if self.params.variable_update == 'horovod':
+        import horovod.tensorflow as hvd
+        if hvd.rank() == 0: print("Ready to leave benchmark graph\n")
     return stats
 
   def benchmark_with_session(self, sess, supervisor, graph_info,
@@ -2673,6 +2678,9 @@ class BenchmarkCNN(object):
                     accuracy_at_1 >= self.params.stop_at_top_1_accuracy))
     mlperf.logger.log(key=mlperf.tags.RUN_STOP, value={'success': success})
     mlperf.logger.log(key=mlperf.tags.RUN_FINAL)
+    if self.params.variable_update == 'horovod':
+        import horovod.tensorflow as hvd
+        if hvd.rank() == 0: print("Ready to quit the benchmark with session\n")
     return stats
 
   def _should_eval_during_training(self, step):
