@@ -186,8 +186,8 @@ class MlPerfLogger(object):
                         examples_per_epoch, stack_offset=2):
     """Logs eval accuracy."""
     epoch = int(global_step * batch_size / examples_per_epoch)
-    eval_accuracy = {'epoch': epoch, 'value': accuracy}
-    eval_iteration_accuracy = {'iteration': global_step, 'value': accuracy}
+    eval_accuracy = {'epoch': int(epoch), 'value': float(accuracy)}
+    eval_iteration_accuracy = {'iteration': int(global_step), 'value': float(accuracy)}
     self.log(key=tags.EVAL_ACCURACY, value=eval_accuracy,
              stack_offset=stack_offset+1)
     self.log(key=tags.EVAL_ITERATION_ACCURACY,
