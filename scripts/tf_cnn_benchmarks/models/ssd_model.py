@@ -307,7 +307,7 @@ class SSD300Model(model_lib.CNNModel):
     batch_size = 32
     N_gpu = 32
     global_batch_size = batch_size * N_gpu
-    decay1, decay2 = 160, 200
+    decay1, decay2 = 140, 180#160, 200
     lo = (decay1 * 1000 * 32) // global_batch_size
     hi = (decay2 * 1000 * 32) // global_batch_size
     boundaries = [lo, hi]
@@ -319,7 +319,7 @@ class SSD300Model(model_lib.CNNModel):
     adjusted_multiplier = max(1, round(requested_lr_multiplier * global_batch_size / 32))
     current_lr = base_lr * adjusted_multiplier
 
-    warmup_factor, warmup_iter = 0, 300
+    warmup_factor, warmup_iter = 0, 900 #300
     warmup_step = current_lr / (warmup_iter * (2 ** warmup_factor))
     warmup_lr = tf.cast(current_lr, tf.float32) - (tf.cast(warmup_iter, tf.float32) - tf.cast(global_step, tf.float32)) * tf.cast(warmup_step, tf.float32)
 
@@ -692,7 +692,8 @@ class SSD300Model(model_lib.CNNModel):
       ret = {'top_1_accuracy': self.eval_coco_ap, 'top_5_accuracy': 0.}
       for metric_key, metric_value in eval_results.items():
         ret[constants.SIMPLE_VALUE_RESULT_PREFIX + metric_key] = metric_value
-      mlperf.logger.log_eval_accuracy(self.batch_size * self.params.num_gpus,
+      mlperf.logger.log_eval_accuracy(self.eval_coco_ap, self.eval_global_step,
+                                      self.batch_size * self.params.num_gpus,
                                       ssd_constants.COCO_NUM_TRAIN_IMAGES)
       return ret
     log_fn('Got {:d} out of {:d} eval examples.'
