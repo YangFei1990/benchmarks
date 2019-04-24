@@ -2682,9 +2682,9 @@ class BenchmarkCNN(object):
     if self.params.variable_update == 'horovod':
         import horovod.tensorflow as hvd
         if hvd.rank() == 0:
-            print("Ready to quit the benchmark with session\n")
             mlperf.logger.log(key=mlperf.tags.RUN_STOP, value={'success': success})
             mlperf.logger.log(key=mlperf.tags.RUN_FINAL)
+            print("Ready to quit the benchmark with session\n")
     else:
         mlperf.logger.log(key=mlperf.tags.RUN_STOP, value={'success': success})
         mlperf.logger.log(key=mlperf.tags.RUN_FINAL)
