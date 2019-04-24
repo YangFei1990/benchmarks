@@ -2641,8 +2641,9 @@ class BenchmarkCNN(object):
     num_epochs_ran = (python_global_step * self.batch_size /
                       self.dataset.num_examples_per_epoch('train'))
     import horovod.tensorflow as hvd
-    print("rank: {}, value: {}\n".format(hvd.rank(), num_epochs_ran))
-    mlperf.logger.log_train_epochs(num_epochs_ran)
+    if hvd.rank() == 0:
+        print("python_global_step : {}, batch size : {}, value: {}\n".format(python_global_step, self.batch_size, num_epochs_ran))
+        mlperf.logger.log_train_epochs(num_epochs_ran)
     if image_producer is not None:
       image_producer.done()
     if eval_image_producer is not None:
