@@ -2627,10 +2627,10 @@ class BenchmarkCNN(object):
       log_fn('-' * 64)
     else:
       log_fn('Done with training')
-    num_steps_since_last_eval = local_step - last_eval_step
-    mlperf.logger.log(
-        key=mlperf.tags.INPUT_SIZE,
-        value=num_steps_since_last_eval * self.batch_size)
+    #num_steps_since_last_eval = local_step - last_eval_step
+    #mlperf.logger.log(
+    #    key=mlperf.tags.INPUT_SIZE,
+    #    value=num_steps_since_last_eval * self.batch_size)
     python_global_step = sess.run(graph_info.global_step)
     if eval_graph_info and not skip_final_eval:
       log_fn('Running final evaluation at global_step {}'.format(
@@ -2640,6 +2640,8 @@ class BenchmarkCNN(object):
           eval_graph_info.summary_op, eval_image_producer, python_global_step)
     num_epochs_ran = (python_global_step * self.batch_size /
                       self.dataset.num_examples_per_epoch('train'))
+    import horovod.tensorflow as hvd
+    print("rank: {}, value: {}\n".format(hvd.rank(), num_epochs_ran))
     mlperf.logger.log_train_epochs(num_epochs_ran)
     if image_producer is not None:
       image_producer.done()
@@ -2676,11 +2678,16 @@ class BenchmarkCNN(object):
     success = bool(self.model.reached_target() or
                    (accuracy_at_1 and self.params.stop_at_top_1_accuracy and
                     accuracy_at_1 >= self.params.stop_at_top_1_accuracy))
-    mlperf.logger.log(key=mlperf.tags.RUN_STOP, value={'success': success})
-    mlperf.logger.log(key=mlperf.tags.RUN_FINAL)
+
     if self.params.variable_update == 'horovod':
         import horovod.tensorflow as hvd
-        if hvd.rank() == 0: print("Ready to quit the benchmark with session\n")
+        if hvd.rank() == 0:
+            print("Ready to quit the benchmark with session\n")
+            mlperf.logger.log(key=mlperf.tags.RUN_STOP, value={'success': success})
+            mlperf.logger.log(key=mlperf.tags.RUN_FINAL)
+    else:
+        mlperf.logger.log(key=mlperf.tags.RUN_STOP, value={'success': success})
+        mlperf.logger.log(key=mlperf.tags.RUN_FINAL)
     return stats
 
   def _should_eval_during_training(self, step):
