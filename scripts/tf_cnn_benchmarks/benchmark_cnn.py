@@ -2583,7 +2583,6 @@ class BenchmarkCNN(object):
             sess, summary_writer, eval_graph_info.fetches,
             eval_graph_info.summary_op, eval_image_producer,
             python_global_step)
-        break
         #---------------------End-----------------------------
         last_eval_step = local_step
         if (self.params.stop_at_top_1_accuracy and
