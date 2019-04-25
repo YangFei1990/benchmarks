@@ -311,7 +311,7 @@ class SSD300Model(model_lib.CNNModel):
     except: pass
     batch_size = global_batch_size // N_gpu
 
-    decay1, decay2 = 140, 170 #140, 180 #160, 200
+    decay1, decay2 = 140, 180 #140, 180 #160, 200
     lo = (decay1 * 1000 * 32) // global_batch_size
     hi = (decay2 * 1000 * 32) // global_batch_size
     boundaries = [lo, hi]
