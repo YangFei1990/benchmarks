@@ -306,7 +306,7 @@ class SSD300Model(model_lib.CNNModel):
   def get_learning_rate_torch(self, global_step, global_batch_size):
     N_gpu = 1
     try:
-        import import horovod.tensorflow as hvd
+        import horovod.tensorflow as hvd
         N_gpu = hvd.size()
     except: pass
     batch_size = global_batch_size // N_gpu
