@@ -864,7 +864,7 @@ def benchmark_one_step(sess,
       log_str += '\t%.*f\t%.*f' % (
           LOSS_AND_ACCURACY_DIGITS_TO_SHOW, results['top_1_accuracy'],
           LOSS_AND_ACCURACY_DIGITS_TO_SHOW, results['top_5_accuracy'])
-    if self.params.variable_update == 'horovod':
+    if params.variable_update == 'horovod':
         import horovod.tensorflow as hvd
         if hvd.rank() == 0: log_fn(log_str)
     else: log_fn(log_str)
