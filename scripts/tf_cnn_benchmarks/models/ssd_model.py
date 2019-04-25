@@ -307,7 +307,7 @@ class SSD300Model(model_lib.CNNModel):
     batch_size = 32
     N_gpu = 32
     global_batch_size = batch_size * N_gpu
-    decay1, decay2 = 120, 160 #140, 180 #160, 200
+    decay1, decay2 = 130, 170 #140, 180 #160, 200
     lo = (decay1 * 1000 * 32) // global_batch_size
     hi = (decay2 * 1000 * 32) // global_batch_size
     boundaries = [lo, hi]
