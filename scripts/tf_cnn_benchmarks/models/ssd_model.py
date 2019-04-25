@@ -303,11 +303,15 @@ class SSD300Model(model_lib.CNNModel):
     learning_rate = tf.div(learning_rate, tf.constant(num_ranks, dtype=tf.float32))
     return learning_rate
 
-  def get_learning_rate_torch(self, global_step, batch_size, N_gpu):
-    batch_size = 32
-    N_gpu = 32
-    global_batch_size = batch_size * N_gpu
-    decay1, decay2 = 140, 180 #140, 180 #160, 200
+  def get_learning_rate_torch(self, global_step, global_batch_size):
+    N_gpu = 1
+    try:
+        import import horovod.tensorflow as hvd
+        N_gpu = hvd.size()
+    except: pass
+    batch_size = global_batch_size // N_gpu
+
+    decay1, decay2 = 140, 170 #140, 180 #160, 200
     lo = (decay1 * 1000 * 32) // global_batch_size
     hi = (decay2 * 1000 * 32) // global_batch_size
     boundaries = [lo, hi]

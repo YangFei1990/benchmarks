@@ -658,6 +658,7 @@ flags.DEFINE_string('benchmark_test_id', None,
                     'system.')
 flags.DEFINE_boolean('single_eval_device', False, 'It is used for horovod mode, if set to be True, the eval '
                      'code will be run on a single GPU and boardcast to all other GPUs')
+flags.DEFINE_boolean('apply_larc', False, 'Set True to apply the larc function to the gradients')
 
 platforms_util.define_platform_params()
 
@@ -863,8 +864,10 @@ def benchmark_one_step(sess,
       log_str += '\t%.*f\t%.*f' % (
           LOSS_AND_ACCURACY_DIGITS_TO_SHOW, results['top_1_accuracy'],
           LOSS_AND_ACCURACY_DIGITS_TO_SHOW, results['top_5_accuracy'])
-    import horovod.tensorflow as hvd
-    if hvd.rank() == 0: log_fn(log_str)
+    if self.params.variable_update == 'horovod':
+        import horovod.tensorflow as hvd
+        if hvd.rank() == 0: log_fn(log_str)
+    else: log_fn(log_str)
     #log_fn(log_str)
     if benchmark_logger:
       benchmark_logger.log_metric(
@@ -1180,7 +1183,10 @@ def get_learning_rate(params, global_step, num_examples_per_epoch, model,
           learning_rate = tf.maximum(learning_rate,
                                      params.minimum_learning_rate)
     else:
-      learning_rate = model.get_learning_rate_torch(global_step, batch_size, 32)
+      if self.params.single_eval_device:
+        learning_rate = model.get_learning_rate_torch(global_step, batch_size)
+      else:
+        learning_rate = model.get_learning_rate_old(global_step, batch_size)
     if params.num_learning_rate_warmup_epochs > 0 and (
         params.init_learning_rate is not None or
         params.piecewise_learning_rate_schedule):
@@ -3128,8 +3134,8 @@ class BenchmarkCNN(object):
             is_chief=not self.job_name or self.task_index == 0)
         # Fei: Applied the larc function, changed the clipped_grads into larc grads
         with tf.name_scope('larc'):
-          #larc_grads = self.apply_larc(clipped_grads, learning_rate)
-          larc_grads = clipped_grads
+          if self.params.apply_larc: larc_grads = self.apply_larc(clipped_grads, learning_rate)
+          else: larc_grads = clipped_grads
 
         with tf.name_scope('append_apply_gradient_ops'):
           self.variable_mgr.append_apply_gradients_ops(
