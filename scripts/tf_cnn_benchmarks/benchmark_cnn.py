@@ -1183,7 +1183,7 @@ def get_learning_rate(params, global_step, num_examples_per_epoch, model,
           learning_rate = tf.maximum(learning_rate,
                                      params.minimum_learning_rate)
     else:
-      if self.params.single_eval_device:
+      if params.single_eval_device:
         learning_rate = model.get_learning_rate_torch(global_step, batch_size)
       else:
         learning_rate = model.get_learning_rate_old(global_step, batch_size)
