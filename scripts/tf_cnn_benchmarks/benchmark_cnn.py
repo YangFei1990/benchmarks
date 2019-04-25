@@ -2646,9 +2646,12 @@ class BenchmarkCNN(object):
           eval_graph_info.summary_op, eval_image_producer, python_global_step)
     num_epochs_ran = (python_global_step * self.batch_size /
                       self.dataset.num_examples_per_epoch('train'))
-    import horovod.tensorflow as hvd
-    if hvd.rank() == 0:
-        print("python_global_step : {}, batch size : {}, value: {}\n".format(python_global_step, self.batch_size, num_epochs_ran))
+    if self.params.variable_update == 'horovod':
+        import horovod.tensorflow as hvd
+        if hvd.rank() == 0:
+            print("python_global_step : {}, batch size : {}, value: {}\n".format(python_global_step, self.batch_size, num_epochs_ran))
+            mlperf.logger.log_train_epochs(num_epochs_ran)
+    else:
         mlperf.logger.log_train_epochs(num_epochs_ran)
     if image_producer is not None:
       image_producer.done()
